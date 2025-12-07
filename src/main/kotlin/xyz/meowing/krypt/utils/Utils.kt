@@ -1,11 +1,13 @@
 package xyz.meowing.krypt.utils
 
 import net.minecraft.ChatFormatting
+import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import xyz.meowing.knit.api.KnitClient.client
 import java.awt.Color
 import java.util.Optional
+import kotlin.math.sqrt
 
 object Utils {
     inline val partialTicks get() = client.deltaTracker.getGameTimeDeltaPartialTick(true)
@@ -67,5 +69,19 @@ object Utils {
             Optional.empty<Unit>()
         }, Style.EMPTY)
         return sb.toString()
+    }
+
+    fun calcDistanceSq(a: BlockPos, b: BlockPos): Double {
+        val dx = (a.x - b.x).toDouble()
+        val dy = (a.y - b.y).toDouble()
+        val dz = (a.z - b.z).toDouble()
+        return sqrt(dx * dx + dy * dy + dz * dz)
+    }
+
+    fun calcDistance(a: BlockPos, b: BlockPos): Double {
+        val dx = (a.x - b.x).toDouble()
+        val dy = (a.y - b.y).toDouble()
+        val dz = (a.z - b.z).toDouble()
+        return dx * dx + dy * dy + dz * dz
     }
 }

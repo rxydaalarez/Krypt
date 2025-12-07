@@ -19,6 +19,8 @@ import xyz.meowing.krypt.events.core.MouseEvent
 import xyz.meowing.krypt.events.core.PacketEvent
 import xyz.meowing.krypt.events.core.RenderEvent
 import xyz.meowing.krypt.features.Feature
+import xyz.meowing.krypt.features.waypoints.utils.RoomWaypointHandler
+import xyz.meowing.krypt.features.waypoints.utils.RouteRecorder
 import xyz.meowing.krypt.managers.config.ConfigElement
 import xyz.meowing.krypt.managers.config.ConfigManager
 import java.awt.Color
@@ -173,94 +175,13 @@ object DungeonWaypoints : Feature(
                 ConfigElement(
                     "dungeonWaypoints.reloadLocal",
                     ElementType.Button("Reload from Local") {
-                        WaypointRegistry.reloadFromLocal(notifyUser = true)
+                        //WaypointRegistry.reloadFromLocal(notifyUser = true)
                     }
                 )
             )
     }
 
     override fun initialize() {
-        register<DungeonEvent.Room.Change> { event ->
-            RoomWaypointHandler.loadWaypointsForRoom(event.new)
-        }
 
-        register<RenderEvent.World.Last> { event ->
-            if (DungeonAPI.inBoss) return@register
-            WaypointRenderer.render(event)
-        }
-
-        register<DungeonEvent.Secrets.Bat> { event ->
-            val room = DungeonAPI.currentRoom ?: return@register
-            val waypoints = RoomWaypointHandler.getWaypoints(room) ?: return@register
-
-            SecretHandler.clickSecret(waypoints, event.entity.blockPosition(), 0)
-        }
-
-        register<DungeonEvent.Secrets.Item> { event ->
-            val room = DungeonAPI.currentRoom ?: return@register
-            val waypoints = RoomWaypointHandler.getWaypoints(room) ?: return@register
-            val pos = KnitClient.world?.getEntity(event.entityId)?.blockPosition() ?: return@register
-
-            SecretHandler.clickSecret(waypoints, pos, 3)
-        }
-
-        register<DungeonEvent.Secrets.Chest> { event ->
-            val room = DungeonAPI.currentRoom ?: return@register
-            val waypoints = RoomWaypointHandler.getWaypoints(room) ?: return@register
-
-            SecretHandler.clickSecret(waypoints, event.blockPos, 0)
-        }
-
-        register<DungeonEvent.Secrets.Essence> { event ->
-            val room = DungeonAPI.currentRoom ?: return@register
-            val waypoints = RoomWaypointHandler.getWaypoints(room) ?: return@register
-
-            SecretHandler.clickSecret(waypoints, event.blockPos, 0)
-        }
-
-        register<DungeonEvent.Secrets.Misc> { event ->
-            val room = DungeonAPI.currentRoom ?: return@register
-            val waypoints = RoomWaypointHandler.getWaypoints(room) ?: return@register
-
-            SecretHandler.clickSecret(waypoints, event.blockPos, 0)
-        }
-
-        register<PacketEvent.Received> { event ->
-            if (event.packet is ClientboundPlayerPositionPacket) {
-                SecretHandler.handleEtherwarp(event.packet)
-            }
-        }
-
-        register<LocationEvent.WorldChange> {
-            RoomWaypointHandler.clear()
-            SecretHandler.reset()
-        }
-
-        register<MouseEvent.Click> { event ->
-            RouteRecorder.handleRightClick(event)
-            RouteRecorder.handleLeftClick(event)
-        }
-
-        register<MouseEvent.Click> { event ->
-            if (event.button != GLFW.GLFW_MOUSE_BUTTON_RIGHT || client.screen != null) return@register
-            val item = client.player?.mainHandItem ?: return@register
-
-            item
-                .getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY)
-                .copyTag()
-                .takeIf {
-                    it?.getInt("ethermerge")?.orElse(0) == 1 ||
-                    item.getData(DataTypes.SKYBLOCK_ID)?.skyblockId == "ETHERWARP_CONDUIT"
-                }
-                ?.let { item ->
-                    val distance = 56.0 + item.getInt("tuned_transmission").orElse(0)
-                    EtherWarpHelper.getEtherPos(client.player?.position(), distance)
-                        .takeIf { it.succeeded && it.pos != null }
-                        ?.also {
-                            SecretHandler.lastEtherTime = System.currentTimeMillis()
-                            SecretHandler.lastEtherPos = it.pos
-                        }
-            }
-        }
     }
 }

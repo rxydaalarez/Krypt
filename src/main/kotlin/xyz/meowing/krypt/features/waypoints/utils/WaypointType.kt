@@ -1,5 +1,6 @@
-package xyz.meowing.krypt.features.waypoints
+package xyz.meowing.krypt.features.waypoints.utils
 
+import xyz.meowing.krypt.features.waypoints.DungeonWaypoints
 import java.awt.Color
 
 enum class WaypointType {
@@ -9,7 +10,8 @@ enum class WaypointType {
     MINE,
     LEVER,
     SUPERBOOM,
-    ETHERWARP
+    ETHERWARP,
+    CUSTOM,
     ;
 
     val color: Color
@@ -21,6 +23,20 @@ enum class WaypointType {
             SUPERBOOM -> DungeonWaypoints.superBoomColor
             LEVER -> DungeonWaypoints.leverColor
             START -> DungeonWaypoints.startColor
+            CUSTOM -> Color.WHITE
+        }
+
+
+    val label: String
+        get() = when (this) {
+            BAT -> "Bat"
+            MINE -> "Mine"
+            SECRET -> "Click"
+            ETHERWARP -> "Warp"
+            SUPERBOOM -> "Boom!"
+            LEVER -> "Flick"
+            START -> ""
+            CUSTOM -> name
         }
 
     companion object {
