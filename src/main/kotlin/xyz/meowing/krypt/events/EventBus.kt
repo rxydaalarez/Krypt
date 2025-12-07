@@ -3,8 +3,10 @@ package xyz.meowing.krypt.events
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientWorldEvents
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.network.protocol.Packet
 import xyz.meowing.knit.Knit
 import xyz.meowing.knit.api.events.Event
@@ -17,6 +19,8 @@ import xyz.meowing.krypt.api.location.SkyBlockIsland
 import xyz.meowing.krypt.events.core.ChatEvent
 import xyz.meowing.krypt.events.core.EntityEvent
 import xyz.meowing.krypt.events.core.GameEvent
+import xyz.meowing.krypt.events.core.GuiEvent
+import xyz.meowing.krypt.events.core.ItemTooltipEvent
 import xyz.meowing.krypt.events.core.LocationEvent
 import xyz.meowing.krypt.events.core.PacketEvent
 import xyz.meowing.krypt.events.core.RenderEvent
@@ -60,6 +64,10 @@ object EventBus : EventBus(true) {
             if (post(RenderEvent.World.BlockOutline(event.context))) event.cancel()
         }
 
+        ClientEntityEvents.ENTITY_UNLOAD.register { entity, _ ->
+            post(EntityEvent.Leave(entity))
+        }
+
         ClientLifecycleEvents.CLIENT_STARTED.register { _ ->
             post(GameEvent.Start())
         }
@@ -74,6 +82,20 @@ object EventBus : EventBus(true) {
 
         ClientEntityEvents.ENTITY_LOAD.register { entity, _ ->
             post(EntityEvent.Join(entity))
+        }
+
+        ScreenEvents.BEFORE_INIT.register { _, screen, _, _ ->
+            if (screen != null) post(GuiEvent.Open(screen))
+        }
+
+        ItemTooltipCallback.EVENT.register { stack, context, type, lines ->
+            val tooltipEvent = ItemTooltipEvent(stack, context, type, lines)
+            post(tooltipEvent)
+
+            if (tooltipEvent.lines != lines) {
+                lines.clear()
+                lines.addAll(tooltipEvent.lines)
+            }
         }
     }
 

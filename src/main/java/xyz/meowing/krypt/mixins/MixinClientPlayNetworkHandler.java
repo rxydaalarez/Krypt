@@ -25,7 +25,7 @@ public abstract class MixinClientPlayNetworkHandler extends ClientCommonPacketLi
     }
 
     @Inject(method = "handleSetEntityData", at = @At("TAIL"))
-    private void zen$onEntityTrackerUpdate(ClientboundSetEntityDataPacket packet, CallbackInfo ci, @Local Entity entity) {
+    private void krypt$onEntityTrackerUpdate(ClientboundSetEntityDataPacket packet, CallbackInfo ci, @Local Entity entity) {
         if (entity != null) {
             String name = packet.packedItems().stream()
                                 .filter(entry -> entry.id() == 2)

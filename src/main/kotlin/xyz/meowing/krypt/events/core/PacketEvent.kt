@@ -17,7 +17,7 @@ abstract class PacketEvent {
 
     class Sent(
         val packet: Packet<*>
-    ) : Event()
+    ) : CancellableEvent()
     
     class SentPost(
         val packet: Packet<*>

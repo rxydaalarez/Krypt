@@ -14,17 +14,33 @@ import xyz.meowing.krypt.Krypt
  * Original File: [GitHub](https://github.com/Synnerz/devonian/blob/1ad3ce3a40d4f6409eaa5407d1b180ba293edb43/src/main/kotlin/com/github/synnerz/devonian/utils/render/DPipelines.kt
  */
 object KryptRenderPipelines {
-    val LINES_THROUGH_WALLS: RenderPipeline = RenderPipelines.register(
-        RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
-            .withLocation(ResourceLocation.fromNamespaceAndPath(Krypt.NAMESPACE, "lines_through_walls"))
-            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-            .build()
-    )
-
     val FILLED_THROUGH_WALLS: RenderPipeline = RenderPipelines.register(
         RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
             .withLocation(ResourceLocation.fromNamespaceAndPath(Krypt.NAMESPACE, "filled_through_walls"))
             .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLE_STRIP)
+            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+            .build()
+    )
+
+    val LINE_LIST: RenderPipeline = RenderPipelines.register(
+        RenderPipeline.builder(*arrayOf<RenderPipeline.Snippet?>(RenderPipelines.LINES_SNIPPET))
+            .withLocation("pipeline/lines")
+            .withVertexFormat(DefaultVertexFormat.POSITION_COLOR_NORMAL, VertexFormat.Mode.LINES)
+            .withCull(false)
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withDepthWrite(true)
+            .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
+            .build()
+    )
+
+    val LINE_LIST_ESP: RenderPipeline = RenderPipelines.register(
+        RenderPipeline.builder(*arrayOf<RenderPipeline.Snippet?>(RenderPipelines.LINES_SNIPPET))
+            .withLocation("pipeline/lines")
+            .withShaderDefine("shad")
+            .withVertexFormat(DefaultVertexFormat.POSITION_COLOR_NORMAL, VertexFormat.Mode.LINES)
+            .withCull(false)
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withDepthWrite(false)
             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
             .build()
     )

@@ -6,7 +6,7 @@ import xyz.meowing.knit.api.scheduler.TickScheduler
 import xyz.meowing.krypt.annotations.Module
 import xyz.meowing.krypt.api.location.SkyBlockIsland
 import xyz.meowing.krypt.config.ConfigDelegate
-import xyz.meowing.krypt.config.ui.types.ElementType
+import xyz.meowing.krypt.config.ui.elements.base.ElementType
 import xyz.meowing.krypt.events.core.EntityEvent
 import xyz.meowing.krypt.events.core.LocationEvent
 import xyz.meowing.krypt.events.core.RenderEvent
@@ -18,28 +18,28 @@ import xyz.meowing.krypt.utils.glowingColor
 import java.awt.Color
 
 @Module
-object HighlightStarMobs : Feature(
-    "highlightStarMobs",
+object StarMobHighlight : Feature(
+    "starMobHighlight",
     island = SkyBlockIsland.THE_CATACOMBS
 ) {
     private val entities = mutableListOf<Int>()
-    private val starMobsColor by ConfigDelegate<Color>("highlightStarMobs.color")
+    private val starMobsColor by ConfigDelegate<Color>("starMobHighlight.color")
 
     override fun addConfig() {
         ConfigManager
             .addFeature(
-                "Highlight star mobs",
+                "Star mob highlight",
                 "Highlights starred mobs in dungeons",
-                "General",
+                "Highlights",
                 ConfigElement(
-                    "highlightStarMobs",
+                    "starMobHighlight",
                     ElementType.Switch(false)
                 )
             )
             .addFeatureOption(
-                "Highlight star mobs color",
+                "Color",
                 ConfigElement(
-                    "highlightStarMobs.color",
+                    "starMobHighlight.color",
                     ElementType.ColorPicker(Color(0, 255, 255, 127))
                 )
             )

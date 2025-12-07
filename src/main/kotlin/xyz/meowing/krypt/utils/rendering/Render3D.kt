@@ -1,5 +1,6 @@
 package xyz.meowing.krypt.utils.rendering
 
+import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.world.phys.shapes.VoxelShape
 import net.minecraft.client.gui.Font
 import net.minecraft.client.renderer.LightTexture
@@ -19,8 +20,7 @@ import net.minecraft.util.Mth
 import com.mojang.math.Axis
 import net.minecraft.world.phys.Vec3
 import net.minecraft.world.level.ClipContext
-import org.joml.Matrix4f
-import org.lwjgl.opengl.GL11
+import org.joml.unaryMinus
 import tech.thatgravyboat.skyblockapi.utils.extentions.pushPop
 import xyz.meowing.knit.api.KnitClient.client
 import xyz.meowing.knit.api.KnitPlayer.player
@@ -28,109 +28,47 @@ import xyz.meowing.knit.api.render.world.RenderContext
 import xyz.meowing.krypt.utils.Utils
 import xyz.meowing.krypt.utils.rendering.layers.KryptRenderLayers
 import java.awt.Color
-import kotlin.math.cos
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.sin
-import kotlin.math.sqrt
+import kotlin.math.*
 
 object Render3D {
-    private fun getValidLineWidth(width: Float): Float {
-        val range = FloatArray(2)
-        GL11.glGetFloatv(GL11.GL_LINE_WIDTH_RANGE, range)
-        return min(max(width, range[0]), range[1])
-    }
+    private val ALLOCATOR = ByteBufferBuilder(1536)
 
     fun drawString(
         text: String,
         pos: Vec3,
-        color: Int = 0xFFFFFF,
+        stack: PoseStack?,
+        color: Int = -1,
         scale: Float = 1.0f,
-        yOffset: Float = 0.0f,
         depth: Boolean = true,
-        dynamic: Boolean = true,
-        scaleMultiplier: Double = 1.0,
-        hideTooCloseAt: Double = 4.5,
-        smallestDistanceView: Double = 5.0,
-        maxDistance: Int? = null,
-        ignoreY: Boolean = false,
         shadow: Boolean = true
     ) {
         val camera = client.gameRenderer.mainCamera
-        val cameraPos = camera.position
-        val allocator = ByteBufferBuilder(256)
-        val consumers = MultiBufferSource.immediate(allocator)
-
-        val dirVec = Vec3(cameraPos.x - pos.x, 0.0, cameraPos.z - pos.z).normalize()
-        val playerOffsetPos = Vec3(pos.x + dirVec.x * 0.5, pos.y, pos.z + dirVec.z * 0.5)
-
-        val renderPos: Vec3
-        val finalScale: Float
-
-        if (dynamic) {
-            val player = player ?: return
-            val eyeHeight = player.eyeHeight
-            val x = playerOffsetPos.x
-            val y = playerOffsetPos.y
-            val z = playerOffsetPos.z
-
-            val dX = (x - cameraPos.x) * (x - cameraPos.x)
-            val dY = (y - (cameraPos.y + eyeHeight)) * (y - (cameraPos.y + eyeHeight))
-            val dZ = (z - cameraPos.z) * (z - cameraPos.z)
-            val distToPlayerSq = dX + dY + dZ
-            var distToPlayer = sqrt(distToPlayerSq)
-
-            distToPlayer = distToPlayer.coerceAtLeast(smallestDistanceView)
-            if (distToPlayer < hideTooCloseAt) return
-            maxDistance?.let { if (!depth && distToPlayer > it) return }
-
-            val distRender = distToPlayer.coerceAtMost(50.0)
-            val dynamicScale = (distRender / 12) * scaleMultiplier
-            finalScale = dynamicScale.toFloat()
-
-            val resultX = cameraPos.x + (x - cameraPos.x) / (distToPlayer / distRender)
-            val resultY = if (ignoreY) y * distToPlayer / distRender
-            else cameraPos.y + eyeHeight + (y + 20 * distToPlayer / 300 - (cameraPos.y + eyeHeight)) / (distToPlayer / distRender)
-            val resultZ = cameraPos.z + (z - cameraPos.z) / (distToPlayer / distRender)
-
-            renderPos = Vec3(resultX, resultY, resultZ)
-        } else {
-            renderPos = playerOffsetPos
-            finalScale = scale
+        val stack = stack ?: return
+        stack.pushPose()
+        val matrix = stack.last().pose()
+        with(scale * 0.025f) {
+            matrix.translate(pos.toVector3f()).translate(-camera.position.toVector3f()).rotate(camera.rotation()).scale(this, -this, this)
         }
 
-        val lines = text.split("\n")
-        val fontHeight = client.font.lineHeight.toFloat()
-        val scaledFontHeight = fontHeight * finalScale * 0.025f
-        val totalHeight = lines.size * scaledFontHeight
-        val startY = -(totalHeight / 2f) + yOffset
+        val consumers = MultiBufferSource.immediate(ALLOCATOR)
 
-        lines.forEachIndexed { index, line ->
-            val lineY = startY + (index * scaledFontHeight)
-            val positionMatrix = Matrix4f()
-                .translate(
-                    (renderPos.x - cameraPos.x).toFloat(),
-                    (renderPos.y - cameraPos.y + lineY).toFloat(),
-                    (renderPos.z - cameraPos.z).toFloat()
-                )
-                .rotate(camera.rotation())
-                .scale(finalScale * 0.025f, -(finalScale * 0.025f), finalScale * 0.025f)
-
-            val xOffset = -client.font.width(line) / 2f
-            client.font.drawInBatch(
-                line,
-                xOffset,
+        client.font?.let {
+            it.drawInBatch(
+                text,
+                -it.width(text) / 2f,
                 0f,
                 color,
                 shadow,
-                positionMatrix,
+                matrix,
                 consumers,
                 if (depth) Font.DisplayMode.NORMAL else Font.DisplayMode.SEE_THROUGH,
                 0,
                 LightTexture.FULL_BRIGHT
             )
         }
+
         consumers.endBatch()
+        stack.popPose()
     }
 
     fun drawLineToEntity(
@@ -183,8 +121,7 @@ object Render3D {
         val consumers = consumers as MultiBufferSource.BufferSource
         val buffer = consumers.getBuffer(RenderType.lines())
 
-        val validThickness = getValidLineWidth(thickness)
-        GL11.glLineWidth(validThickness)
+        RenderSystem.lineWidth(thickness)
 
         val r = color.red / 255f
         val g = color.green / 255f
@@ -350,7 +287,7 @@ object Render3D {
         matrices.pushPose()
         matrices.translate(-camera.x, -camera.y, -camera.z)
         val consumers = consumers as MultiBufferSource.BufferSource
-        val buffer = consumers.getBuffer(if (phase) KryptRenderLayers.getLinesThroughWalls(1.0) else RenderType.lines())
+        val buffer = consumers.getBuffer(if (phase) KryptRenderLayers.LINE_LIST_ESP else RenderType.lines())
         val r = color.red / 255f
         val g = color.green / 255f
         val b = color.blue / 255f
@@ -374,7 +311,7 @@ object Render3D {
             b,
             a
         )
-        consumers.endBatch(if (phase) KryptRenderLayers.getLinesThroughWalls(1.0) else RenderType.lines())
+        consumers.endBatch(if (phase) KryptRenderLayers.LINE_LIST_ESP else RenderType.lines())
         matrices.popPose()
     }
 

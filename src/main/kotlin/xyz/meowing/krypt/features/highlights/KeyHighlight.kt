@@ -3,12 +3,11 @@ package xyz.meowing.krypt.features.highlights
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.phys.AABB
 import tech.thatgravyboat.skyblockapi.utils.text.TextProperties.stripped
-import xyz.meowing.knit.api.KnitChat
 import xyz.meowing.krypt.annotations.Module
 import xyz.meowing.krypt.api.dungeons.DungeonAPI
 import xyz.meowing.krypt.api.location.SkyBlockIsland
 import xyz.meowing.krypt.config.ConfigDelegate
-import xyz.meowing.krypt.config.ui.types.ElementType
+import xyz.meowing.krypt.config.ui.elements.base.ElementType
 import xyz.meowing.krypt.events.core.EntityEvent
 import xyz.meowing.krypt.events.core.LocationEvent
 import xyz.meowing.krypt.events.core.RenderEvent
@@ -24,6 +23,8 @@ object KeyHighlight : Feature(
     "keyHighlight",
     island = SkyBlockIsland.THE_CATACOMBS
 ) {
+    private val filled by ConfigDelegate<Boolean>("keyHighlight.filled")
+    private val outlined by ConfigDelegate<Boolean>("keyHighlight.outlined")
     private val highlightWither by ConfigDelegate<Boolean>("keyHighlight.wither")
     private val highlightBlood by ConfigDelegate<Boolean>("keyHighlight.blood")
     private val witherColor by ConfigDelegate<Color>("keyHighlight.witherColor")
@@ -57,17 +58,31 @@ object KeyHighlight : Feature(
                 )
             )
             .addFeatureOption(
+                "Filled box",
+                ConfigElement(
+                    "keyHighlight.filled",
+                    ElementType.Switch(false)
+                )
+            )
+            .addFeatureOption(
+                "Outlined box",
+                ConfigElement(
+                    "keyHighlight.outlined",
+                    ElementType.Switch(true)
+                )
+            )
+            .addFeatureOption(
                 "Wither key color",
                 ConfigElement(
                     "keyHighlight.witherColor",
-                    ElementType.ColorPicker(Color(0, 0, 0, 60))
+                    ElementType.ColorPicker(Color(0, 0, 0, 255))
                 )
             )
             .addFeatureOption(
                 "Blood key color",
                 ConfigElement(
                     "keyHighlight.bloodColor",
-                    ElementType.ColorPicker(Color(255, 0, 0, 60))
+                    ElementType.ColorPicker(Color(255, 0, 0, 255))
                 )
             )
     }
@@ -93,13 +108,13 @@ object KeyHighlight : Feature(
                     return@register
                 }
 
-                val matrices = event.context.matrixStack()
+                val matrixStack = event.context.matrixStack()
                 val consumers = event.context.consumers()
 
                 Render3D.drawLineToEntity(
                     entity,
                     consumers,
-                    matrices,
+                    matrixStack,
                     color.toFloatArray(),
                     1f
                 )
@@ -112,7 +127,24 @@ object KeyHighlight : Feature(
                     entity.y + 2.0,
                     entity.z + 0.4
                 )
-                Render3D.drawSpecialBB(box, color, consumers, matrices)
+
+                if (filled) {
+                    Render3D.drawFilledBB(
+                        box,
+                        color,
+                        consumers,
+                        matrixStack
+                    )
+                }
+
+                if (outlined) {
+                    Render3D.drawOutlinedBB(
+                        box,
+                        color.darker(),
+                        consumers,
+                        matrixStack
+                    )
+                }
             }
         }
 

@@ -1,5 +1,6 @@
 package xyz.meowing.krypt.api.dungeons.handlers
 
+import net.minecraft.world.level.saveddata.maps.MapDecoration
 import net.minecraft.world.level.saveddata.maps.MapDecorationTypes
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData
 import xyz.meowing.krypt.Krypt
@@ -31,53 +32,33 @@ object MapScanner {
         val decorations = (state as AccessorMapState).decorations
         var playerIndex = 1
 
-        for ((key, mapDecoration) in decorations) {
-            val isFrame = mapDecoration.type.value().equals(MapDecorationTypes.FRAME.value())
+        for ((_, dec) in decorations) {
+            if (dec.type == MapDecorationTypes.FRAME) continue
 
-            val player = if (isFrame) {
-                DungeonAPI.players.firstOrNull()
-            } else {
-                var dplayer: DungeonPlayer? = null
-                while (playerIndex < DungeonAPI.players.size) {
-                    val p = DungeonAPI.players[playerIndex++]
-                    if (p != null && !p.dead) {
-                        dplayer = p
-                        break
-                    }
+            while (playerIndex < DungeonAPI.players.size) {
+                val player = DungeonAPI.players[playerIndex++]
+                if (player != null && !player.dead) {
+                    updatePlayer(player, dec)
+                    break
                 }
-                dplayer
             }
+        }
+    }
 
-            if (player == null) {
-                dungeonPlayerError(key, "not found", playerIndex - 1)
-                continue
-            }
+    private fun updatePlayer(player: DungeonPlayer, dec: MapDecoration) {
+        if (player.uuid == null || player.inRender) return
 
-            if (player.dead) {
-                dungeonPlayerError(key, "not alive", playerIndex - 1)
-                continue
-            }
+        val mapSize = MapUtils.mapRoomSize.toDouble() * 6 + 20.0
+        val defaultSize = ScanUtils.defaultMapSize.first.toDouble()
 
-            if (player.uuid == null) {
-                dungeonPlayerError(key, "has null uuid", playerIndex - 1)
-                continue
-            }
-
-            if (player.inRender) continue
-
-            val mapSize = MapUtils.mapRoomSize.toDouble() * 6 + 20.0
-            val defaultSize = ScanUtils.defaultMapSize.first.toDouble()
-
-            player.iconX = clampMap(mapDecoration.mapX.toDouble() - MapUtils.mapCorners.first, 0.0, mapSize, 0.0, defaultSize)
-            player.iconZ = clampMap(mapDecoration.mapZ.toDouble() - MapUtils.mapCorners.second, 0.0, mapSize, 0.0, defaultSize)
-            player.realX = player.iconX?.let { clampMap(it, 0.0, 125.0, -200.0, -10.0) }
-            player.realZ = player.iconZ?.let { clampMap(it, 0.0, 125.0, -200.0, -10.0) }
-            player.yaw = mapDecoration.yaw + 180f
-
-            player.currRoom = player.realX?.toInt()?.let { x ->
-                player.realZ?.toInt()?.let { z ->
-                    DungeonAPI.getRoomAt(x, z)?.also { it.players.add(player) }
-                }
+        player.iconX = clampMap(dec.mapX.toDouble() - MapUtils.mapCorners.first, 0.0, mapSize, 0.0, defaultSize)
+        player.iconZ = clampMap(dec.mapZ.toDouble() - MapUtils.mapCorners.second, 0.0, mapSize, 0.0, defaultSize)
+        player.realX = player.iconX?.let { clampMap(it, 0.0, 125.0, -200.0, -10.0) }
+        player.realZ = player.iconZ?.let { clampMap(it, 0.0, 125.0, -200.0, -10.0) }
+        player.yaw = dec.yaw + 180f
+        player.currRoom = player.realX?.toInt()?.let { x ->
+            player.realZ?.toInt()?.let { z ->
+                DungeonAPI.getRoomAt(x, z)?.also { it.players.add(player) }
             }
         }
     }
@@ -121,7 +102,8 @@ object MapScanner {
 
         scanRoomNeighbors(colors, cx, cz, x, z, room, halfMapGap)
 
-        if (room.type == RoomType.UNKNOWN && room.height == null) {
+        val mapRoomType = RoomType.fromMapColor(rcolor.toInt())
+        if ((room.type == RoomType.UNKNOWN && room.height == null) || (room.type != mapRoomType && mapRoomType == RoomType.BLOOD)) {
             room.loadFromMapColor(rcolor)
         }
 
@@ -223,13 +205,18 @@ object MapScanner {
                 rotation = if (cz % 2 == 1) 0 else 1
                 setType(type)
                 setState(DoorState.DISCOVERED)
+                updateFairyDoorStatus()
             }
+
             DungeonAPI.addDoor(newDoor)
         } else {
             existingDoor.setState(DoorState.DISCOVERED)
+
             if (existingDoor.type == DoorType.NORMAL && type != DoorType.NORMAL) {
                 existingDoor.setType(type)
             }
+
+            existingDoor.updateFairyDoorStatus()
         }
     }
 

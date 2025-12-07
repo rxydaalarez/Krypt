@@ -1,21 +1,24 @@
 package xyz.meowing.krypt.config.ui
 
+import xyz.meowing.knit.api.input.KnitKeyboard
 import xyz.meowing.knit.api.render.KnitResolution
 import xyz.meowing.vexel.core.VexelScreen
 import xyz.meowing.krypt.managers.config.ConfigManager
-import xyz.meowing.krypt.config.ui.elements.base.ConfigValidator
-import xyz.meowing.krypt.config.ui.types.ElementType
+import xyz.meowing.krypt.config.ui.elements.base.ElementType
 import xyz.meowing.krypt.managers.config.ConfigElement
 import xyz.meowing.krypt.managers.config.CategoryElement
 import xyz.meowing.krypt.utils.Utils.toColorFromMap
 import xyz.meowing.krypt.config.ui.panels.Panel
 import xyz.meowing.krypt.config.ui.elements.MCColorCode
+import xyz.meowing.krypt.config.ui.elements.FeatureTooltip
+import xyz.meowing.krypt.ui.Theme
+import xyz.meowing.vexel.components.base.Pos
+import xyz.meowing.vexel.components.core.Text
 import java.awt.Color
 
 typealias ConfigData = Map<String, Any>
 
-class ClickGUI : VexelScreen("Zen Config") {
-    private val validator = ConfigValidator()
+object ClickGUI : VexelScreen("Krypt Config") {
     private val panels = mutableListOf<Panel>()
 
     private val categoryOrder = listOf(
@@ -23,6 +26,7 @@ class ClickGUI : VexelScreen("Zen Config") {
     )
 
     private lateinit var searchBar: SearchBar
+    lateinit var featureTooltip: FeatureTooltip
 
     private val configListeners = mutableMapOf<String, MutableList<(Any) -> Unit>>()
     private val closeListeners = mutableListOf<() -> Unit>()
@@ -61,7 +65,21 @@ class ClickGUI : VexelScreen("Zen Config") {
         searchBar = SearchBar { query ->
             filterPanels(query)
         }
+
         searchBar.childOf(window)
+
+        featureTooltip = FeatureTooltip()
+        featureTooltip.childOf(window)
+
+        Text("Hold down Shift and scroll to scroll horizontally.", Theme.Text.color, 16f)
+            .setPositioning(Pos.ParentPixels, Pos.ParentPixels)
+            .alignLeft()
+            .alignBottom()
+            .childOf(window)
+    }
+
+    fun updateTooltip(description: String) {
+        if (::featureTooltip.isInitialized) featureTooltip.setText(description)
     }
 
     private fun getDefaultValue(type: ElementType?): Any? = when (type) {
@@ -77,24 +95,22 @@ class ClickGUI : VexelScreen("Zen Config") {
     }
 
     fun updateConfig(configKey: String, newValue: Any) {
-        val validatedValue = validator.validate(configKey, newValue) ?: return
-
-        val serializedValue = when (validatedValue) {
+        val serializedValue = when (newValue) {
             is Color -> mapOf(
-                "r" to validatedValue.red,
-                "g" to validatedValue.green,
-                "b" to validatedValue.blue,
-                "a" to validatedValue.alpha
+                "r" to newValue.red,
+                "g" to newValue.green,
+                "b" to newValue.blue,
+                "a" to newValue.alpha
             )
-            is Set<*> -> validatedValue.toList()
-            is MCColorCode -> validatedValue.code
-            else -> validatedValue
+            is Set<*> -> newValue.toList()
+            is MCColorCode -> newValue.code
+            else -> newValue
         }
 
         ConfigManager.configValueMap[configKey] = serializedValue
         ConfigManager.saveConfig(false)
 
-        configListeners[configKey]?.forEach { it(validatedValue) }
+        configListeners[configKey]?.forEach { it(newValue) }
     }
 
     fun registerListener(configKey: String, listener: (Any) -> Unit): ClickGUI {
@@ -133,6 +149,25 @@ class ClickGUI : VexelScreen("Zen Config") {
                 panel.visible = panel.matchesSearch(query)
             }
         }
+    }
+
+    override fun onMouseScroll(horizontal: Double, vertical: Double) {
+        if (KnitKeyboard.isShiftKeyPressed) {
+            val scrollAmount = vertical.toFloat() * 20f
+
+            val leftmostX = panels.minOfOrNull { it.x } ?: 0f
+            val rightmostX = panels.maxOfOrNull { it.x + Panel.WIDTH } ?: 0f
+
+            val canScrollLeft = leftmostX < 50f
+            val canScrollRight = rightmostX > KnitResolution.windowWidth - 50f
+
+            if ((scrollAmount > 0 && canScrollLeft) || (scrollAmount < 0 && canScrollRight)) {
+                panels.forEach { panel ->
+                    panel.x += scrollAmount
+                }
+            }
+        }
+        super.onMouseScroll(horizontal, vertical)
     }
 
     override fun onCloseGui() {

@@ -6,7 +6,7 @@ import xyz.meowing.knit.api.scheduler.TickScheduler
 import xyz.meowing.krypt.annotations.Module
 import xyz.meowing.krypt.api.dungeons.DungeonAPI
 import xyz.meowing.krypt.api.location.SkyBlockIsland
-import xyz.meowing.krypt.config.ui.types.ElementType
+import xyz.meowing.krypt.config.ui.elements.base.ElementType
 import xyz.meowing.krypt.events.core.GuiEvent
 import xyz.meowing.krypt.features.Feature
 import xyz.meowing.krypt.hud.HudEditor
@@ -55,7 +55,7 @@ object RoomSecrets: Feature(
         }
     }
 
-    fun hudEditorRender(context: GuiGraphics){
+    fun hudEditorRender(context: GuiGraphics) {
         val matrix = context.pose()
         //#if MC >= 1.21.7
         //$$ matrix.pushMatrix()
@@ -111,8 +111,8 @@ object RoomSecrets: Feature(
         matrix.translate(25f, 5f, 0f)
         //#endif
 
-        Render2D.renderString(context, text1, -w1 / 2f, 0f, 1f)
-        Render2D.renderString(context, text2, -w2 / 2f, 10f, 1f)
+        Render2D.renderString(context, text1, -w1 / 2f, 0f, 1f, textStyle = Render2D.TextStyle.DROP_SHADOW)
+        Render2D.renderString(context, text2, -w2 / 2f, 10f, 1f, textStyle = Render2D.TextStyle.DROP_SHADOW)
 
         //#if MC >= 1.21.7
         //$$ matrix.popMatrix()

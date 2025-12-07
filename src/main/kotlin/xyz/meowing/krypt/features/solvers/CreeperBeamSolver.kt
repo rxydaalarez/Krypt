@@ -8,10 +8,11 @@ import xyz.meowing.krypt.api.dungeons.utils.ScanUtils
 import xyz.meowing.krypt.api.dungeons.utils.block
 import xyz.meowing.krypt.api.location.SkyBlockIsland
 import xyz.meowing.krypt.config.ConfigDelegate
-import xyz.meowing.krypt.config.ui.types.ElementType
+import xyz.meowing.krypt.config.ui.elements.base.ElementType
 import xyz.meowing.krypt.events.core.DungeonEvent
 import xyz.meowing.krypt.events.core.LocationEvent
 import xyz.meowing.krypt.events.core.RenderEvent
+import xyz.meowing.krypt.events.core.WorldEvent
 import xyz.meowing.krypt.features.Feature
 import xyz.meowing.krypt.managers.config.ConfigElement
 import xyz.meowing.krypt.managers.config.ConfigManager
@@ -46,6 +47,7 @@ object CreeperBeamSolver : Feature(
 
     private val showLines by ConfigDelegate<Boolean>("creeperBeamSolver.showLines")
     private val phaseThrough by ConfigDelegate<Boolean>("creeperBeamSolver.phase")
+    private val removeOnClick by ConfigDelegate<Boolean>("creeperBeamSolver.removeOnClick")
 
     init {
         NetworkUtils.fetchJson<List<List<List<Int>>>>(
@@ -88,6 +90,13 @@ object CreeperBeamSolver : Feature(
                     ElementType.Switch(true)
                 )
             )
+            .addFeatureOption(
+                "Remove on click",
+                ConfigElement(
+                    "creeperBeamSolver.removeOnClick",
+                    ElementType.Switch(true)
+                )
+            )
     }
 
     override fun initialize() {
@@ -122,6 +131,14 @@ object CreeperBeamSolver : Feature(
                     val endVec = end.center
                     Render3D.drawLine(startVec, endVec, 1f, color, event.context.consumers(), event.context.matrixStack())
                 }
+            }
+        }
+
+        register<WorldEvent.BlockUpdate> { event ->
+            if (!inCreeperBeams || !removeOnClick) return@register
+
+            if (event.old.block == Blocks.SEA_LANTERN && event.new.block != Blocks.SEA_LANTERN) {
+                currentSolve.removeIf { it.start == event.pos || it.end == event.pos }
             }
         }
     }

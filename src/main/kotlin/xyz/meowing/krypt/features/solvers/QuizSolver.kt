@@ -1,8 +1,11 @@
 package xyz.meowing.krypt.features.solvers
 
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.core.BlockPos
 import net.minecraft.world.phys.AABB
 import tech.thatgravyboat.skyblockapi.utils.text.TextProperties.stripped
+import xyz.meowing.knit.api.KnitClient.client
+import xyz.meowing.knit.api.scheduler.TickScheduler
 import xyz.meowing.krypt.Krypt
 import xyz.meowing.krypt.annotations.Module
 import xyz.meowing.krypt.api.dungeons.utils.ScanUtils
@@ -10,15 +13,22 @@ import xyz.meowing.krypt.api.dungeons.utils.ScanUtils.getRealCoord
 import xyz.meowing.krypt.api.dungeons.utils.block
 import xyz.meowing.krypt.api.location.SkyBlockIsland
 import xyz.meowing.krypt.config.ConfigDelegate
-import xyz.meowing.krypt.config.ui.types.ElementType
+import xyz.meowing.krypt.config.ui.elements.base.ElementType
 import xyz.meowing.krypt.events.core.ChatEvent
 import xyz.meowing.krypt.events.core.DungeonEvent
+import xyz.meowing.krypt.events.core.GuiEvent
 import xyz.meowing.krypt.events.core.LocationEvent
 import xyz.meowing.krypt.events.core.RenderEvent
+import xyz.meowing.krypt.events.core.TickEvent
 import xyz.meowing.krypt.features.Feature
+import xyz.meowing.krypt.hud.HudEditor
+import xyz.meowing.krypt.hud.HudManager
 import xyz.meowing.krypt.managers.config.ConfigElement
 import xyz.meowing.krypt.managers.config.ConfigManager
 import xyz.meowing.krypt.utils.NetworkUtils
+import xyz.meowing.krypt.utils.Utils.removeFormatting
+import xyz.meowing.krypt.utils.Utils.toTimerFormat
+import xyz.meowing.krypt.utils.rendering.Render2D
 import xyz.meowing.krypt.utils.rendering.Render3D
 import java.awt.Color
 
@@ -27,6 +37,8 @@ object QuizSolver : Feature(
     "quizSolver",
     island = SkyBlockIsland.THE_CATACOMBS
 ) {
+    private const val NAME = "Quiz Solver"
+
     private data class TriviaAnswer(var blockPos: BlockPos?, var isCorrect: Boolean)
 
     private val quizSolutions = mutableMapOf<String, List<String>>()
@@ -39,6 +51,10 @@ object QuizSolver : Feature(
 
     private val boxColor by ConfigDelegate<Color>("quizSolver.boxColor")
     private val showBeam by ConfigDelegate<Boolean>("quizSolver.beam")
+    private val timer by ConfigDelegate<Boolean>("quizSolver.timer")
+
+    private var answerTime: Int = 0
+    private var questionsStarted = false
 
     init {
         NetworkUtils.fetchJson<Map<String, List<String>>>(
@@ -78,9 +94,30 @@ object QuizSolver : Feature(
                     ElementType.Switch(true)
                 )
             )
+            .addFeatureOption(
+                "Timer",
+                ConfigElement(
+                    "quizSolver.timer",
+                    ElementType.Switch(false)
+                )
+            )
+            .addFeatureOption("HudEditor",
+                ConfigElement(
+                    "quizSolver.hudEditor",
+                    ElementType.Button("Edit Timer Position") {
+                        TickScheduler.Client.post {
+                            client.execute { client.setScreen(HudEditor()) }
+                        }
+                    }
+                )
+            )
     }
 
     override fun initialize() {
+        HudManager.register(NAME, "§5Quiz §f: §c10.45s", "quizSolver.timer")
+
+        register<GuiEvent.Render.HUD> { renderHud(it.context) }
+
         register<DungeonEvent.Room.Change> { event ->
             if (event.new.name != "Quiz") return@register
 
@@ -100,13 +137,15 @@ object QuizSolver : Feature(
         register<LocationEvent.WorldChange> { reset() }
 
         register<ChatEvent.Receive> { event ->
-            if (!inQuiz || event.isActionBar) return@register
+            if (event.isActionBar) return@register
             val message = event.message.stripped
             val trimmed = message.trim()
 
             when {
                 message.startsWith("[STATUE] Oruo the Omniscient: ") && message.endsWith("correctly!") -> {
+                    answerTime = (7.5 * 20).toInt()
                     if (message.contains("answered the final question")) {
+                        questionsStarted = false
                         reset()
                     } else if (message.contains("answered Question #")) {
                         triviaOptions.forEach { it.isCorrect = false }
@@ -121,6 +160,11 @@ object QuizSolver : Feature(
                             'ⓒ' -> triviaOptions[2].isCorrect = true
                         }
                     }
+                }
+
+                message.removeFormatting() == "[STATUE] Oruo the Omniscient: I am Oruo the Omniscient. I have lived many lives. I have learned all there is to know." -> {
+                    if (inQuiz) questionsStarted = true
+                    answerTime = 11 * 20
                 }
 
                 else -> {
@@ -163,6 +207,10 @@ object QuizSolver : Feature(
                 }
             }
         }
+
+        register<TickEvent.Server> {
+            if (answerTime > 0) answerTime--
+        }
     }
 
     private fun reset() {
@@ -174,5 +222,20 @@ object QuizSolver : Feature(
             it.isCorrect = false
         }
         triviaAnswers = null
+    }
+
+    private fun renderHud(context: GuiGraphics) {
+        val x = HudManager.getX(NAME)
+        val y = HudManager.getY(NAME)
+        val scale = HudManager.getScale(NAME)
+
+        if (timer && questionsStarted) {
+            val timer = when {
+                answerTime > 0 -> "§c${(answerTime / 20f).toTimerFormat()}"
+                else -> "§aReady"
+            }
+            val text = "§5Quiz §f: $timer"
+            Render2D.renderStringWithShadow(context, text, x, y, scale)
+        }
     }
 }

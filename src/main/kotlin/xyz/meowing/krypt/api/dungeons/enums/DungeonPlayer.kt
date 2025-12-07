@@ -3,7 +3,6 @@ package xyz.meowing.krypt.api.dungeons.enums
 import net.minecraft.world.entity.Entity
 import tech.thatgravyboat.skyblockapi.utils.text.TextProperties.stripped
 import xyz.meowing.knit.api.KnitClient
-import xyz.meowing.krypt.api.dungeons.handlers.MapScanner
 import xyz.meowing.krypt.api.dungeons.enums.map.Room
 import xyz.meowing.krypt.api.dungeons.enums.map.RoomClearInfo
 import xyz.meowing.krypt.api.hypixel.HypixelAPI
@@ -37,8 +36,8 @@ class DungeonPlayer(
     var dead: Boolean = false
         internal set
 
-    private var initSecrets: Int? = null
-    private var currSecrets: Int? = null
+    var initSecrets: Int? = null
+    var currSecrets: Int? = null
 
     val secrets get() = (currSecrets ?: initSecrets ?: 0) - (initSecrets ?: 0)
 
@@ -59,14 +58,6 @@ class DungeonPlayer(
     init {
         HypixelAPI.fetchSecrets(uuid.toString(), 120_000) { secrets ->
             initSecrets = secrets
-            currSecrets = secrets
-        }
-    }
-
-    fun updateSecrets() {
-        if (uuid == null) return
-
-        HypixelAPI.fetchSecrets(uuid.toString(), cacheMs = 0) { secrets ->
             currSecrets = secrets
         }
     }

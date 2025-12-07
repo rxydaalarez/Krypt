@@ -1,6 +1,6 @@
 package xyz.meowing.krypt.api.dungeons.enums.map
 
-import xyz.meowing.krypt.features.map.DungeonMap
+import xyz.meowing.krypt.features.map.render.MapRenderConfig
 import java.awt.Color
 
 enum class RoomType {
@@ -16,15 +16,30 @@ enum class RoomType {
 
     val color: Color
         get() = when (this) {
-            NORMAL -> DungeonMap.normalRoomColor
-            PUZZLE -> DungeonMap.puzzleRoomColor
-            TRAP -> DungeonMap.trapRoomColor
-            YELLOW -> DungeonMap.yellowRoomColor
-            BLOOD -> DungeonMap.bloodRoomColor
-            FAIRY -> DungeonMap.fairyRoomColor
-            ENTRANCE -> DungeonMap.entranceRoomColor
+            NORMAL -> MapRenderConfig.normalRoomColor
+            PUZZLE -> MapRenderConfig.puzzleRoomColor
+            TRAP -> MapRenderConfig.trapRoomColor
+            YELLOW -> MapRenderConfig.yellowRoomColor
+            BLOOD -> MapRenderConfig.bloodRoomColor
+            FAIRY -> MapRenderConfig.fairyRoomColor
+            ENTRANCE -> MapRenderConfig.entranceRoomColor
             UNKNOWN -> Color.GRAY
         }
+
+    val colorCode: String
+        get() = when (this) {
+            NORMAL -> "7"
+            PUZZLE -> "d"
+            TRAP -> "6"
+            YELLOW -> "e"
+            BLOOD -> "c"
+            FAIRY -> "d"
+            ENTRANCE -> "a"
+            UNKNOWN -> "f"
+        }
+
+    val nickname: String
+        get() = this.name.lowercase().replaceFirstChar { it.uppercase() }
 
     companion object {
         fun fromRoomData(data: RoomMetadata): RoomType? = when(data.type.lowercase()) {

@@ -2,7 +2,6 @@ package xyz.meowing.krypt.api.dungeons.handlers
 
 import tech.thatgravyboat.skyblockapi.utils.text.TextProperties.stripped
 import xyz.meowing.knit.api.KnitPlayer
-import xyz.meowing.krypt.Krypt
 import xyz.meowing.krypt.annotations.Module
 import xyz.meowing.krypt.api.dungeons.enums.DungeonClass
 import xyz.meowing.krypt.api.dungeons.enums.DungeonPlayer
@@ -43,7 +42,7 @@ object DungeonPlayerManager {
                 if (players[i] != null && players[i]!!.name == name) {
                     players[i]!!.dungeonClass = clazz
                 } else {
-                    players[i] = DungeonPlayer(name).apply { dungeonClass = clazz }
+                    players[i] = DungeonPlayer(name, clazz)
                 }
             }
         }
@@ -57,28 +56,16 @@ object DungeonPlayerManager {
         var name = match.groups["name"]?.value ?: return
         if (name == "You") KnitPlayer.player?.let { name = it.name.stripped }
 
-        val player = getPlayer(name)
-        if (player != null) {
-            player.dead = true
-            player.deaths++
-            deathCount++
-        } else {
-            Krypt.LOGGER.error(
-                "[Dungeon Player Manager] Received ghost message for player '{}' but player was not found in the player list: {}",
-                match.groups["name"]?.value,
-                players.contentToString()
-            )
-        }
+        val player = getPlayer(name) ?: return
+        player.dead = true
+        player.deaths++
+        deathCount++
     }
 
     fun getPlayer(name: String): DungeonPlayer? {
         return players
             .filterNotNull()
             .firstOrNull { it.name == name }
-    }
-
-    fun updateAllSecrets() {
-        players.filterNotNull().forEach { it.updateSecrets() }
     }
 
     fun reset() {

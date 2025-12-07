@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import xyz.meowing.krypt.features.highlights.TeammateHighlight;
 import xyz.meowing.krypt.utils.EntityAccessor;
 
 /**
@@ -26,15 +27,18 @@ public class MixinEntity implements EntityAccessor {
     private boolean krypt$glowingThisFrame = false;
 
     @Inject(method = "getTeamColor", at = @At("HEAD"), cancellable = true)
-    public void getTeamColor(CallbackInfoReturnable<Integer> cir) {
+    public void krypt$getTeamColor(CallbackInfoReturnable<Integer> cir) {
         if (hasCustomGlow()) {
             cir.setReturnValue(krypt$glowingColor);
             this.krypt$glowingThisFrame = false;
         }
+
+        Integer color = TeammateHighlight.getTeammateColor((Entity) (Object) this);
+        if (color != null) cir.setReturnValue(color);
     }
 
     @Inject(method = "isCurrentlyGlowing", at = @At("HEAD"), cancellable = true)
-    public void isGlowing(CallbackInfoReturnable<Boolean> cir) {
+    public void krypt$isGlowing(CallbackInfoReturnable<Boolean> cir) {
         if (hasCustomGlow()) {
             cir.setReturnValue(true);
         }

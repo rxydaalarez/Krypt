@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EntityRenderDispatcher.class)
 public class MixinEntityRenderDispatcher {
     @Inject(method = "render(Lnet/minecraft/world/entity/Entity;DDDFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At("HEAD"), cancellable = true)
-    private void zen$onEntityRenderPre(Entity entity, double x, double y, double z, float tickProgress, PoseStack matrices, MultiBufferSource vertexConsumers, int light, CallbackInfo callbackInfo) {
+    private void krypt$onEntityRenderPre(Entity entity, double x, double y, double z, float tickProgress, PoseStack matrices, MultiBufferSource vertexConsumers, int light, CallbackInfo callbackInfo) {
         if (entity == null) return;
         RenderEvent.Entity.Pre event = new RenderEvent.Entity.Pre(entity, matrices, vertexConsumers, light);
         EventBus.INSTANCE.post(event);
@@ -23,7 +23,7 @@ public class MixinEntityRenderDispatcher {
     }
 
     @Inject(method = "render(Lnet/minecraft/world/entity/Entity;DDDFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At("TAIL"))
-    private void zen$onEntityRenderPost(Entity entity, double x, double y, double z, float tickProgress, PoseStack matrices, MultiBufferSource vertexConsumers, int light, CallbackInfo callbackInfo) {
+    private void krypt$onEntityRenderPost(Entity entity, double x, double y, double z, float tickProgress, PoseStack matrices, MultiBufferSource vertexConsumers, int light, CallbackInfo callbackInfo) {
         if (entity == null) return;
         RenderEvent.Entity.Post event = new RenderEvent.Entity.Post(entity, matrices, vertexConsumers, light);
         EventBus.INSTANCE.post(event);

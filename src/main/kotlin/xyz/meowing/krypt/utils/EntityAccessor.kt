@@ -16,7 +16,7 @@ internal interface EntityAccessor {
     fun `krypt$setGlowingThisFrame`(glowing: Boolean)
 }
 
-var Entity.isCurrentlyGlowing: Boolean
+var Entity.isGlowing: Boolean
     get() = this.isCurrentlyGlowing
     set(value) {
         (this as EntityAccessor).`krypt$setGlowing`(value)

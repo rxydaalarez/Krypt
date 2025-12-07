@@ -4,6 +4,7 @@
     "compatibilityLevel": "JAVA_21",
     "mixins": [
         "MixinEntity",
+        "MixinLevelChunk",
         "MixinLivingEntity"
     ],
     "injectors": {
@@ -14,8 +15,13 @@
     },
     "client": [
         "AccessorMapState",
+        "MixinAbstractContainerScreen",
+        "MixinBossHealthOverlay",
         "MixinClientConnection",
+        "MixinClientPlayNetworkHandler",
         "MixinEntityRenderer",
-        "MixinGameRenderer"
+        "MixinGameRenderer",
+        "MixinMinecraft",
+        "MixinMouseHandler"
     ]
 }

@@ -6,6 +6,20 @@ import xyz.meowing.knit.api.events.CancellableEvent
 import xyz.meowing.knit.api.events.Event
 
 sealed class EntityEvent {
+    sealed class Packet {
+        /**
+         * Posted when the client receives the EntityTrackerUpdateS2CPacket packet.
+         *
+         * @see xyz.meowing.krypt.mixins.MixinClientPlayNetworkHandler
+         * @since 1.2.0
+         */
+        class Metadata(
+            val packet: ClientboundSetEntityDataPacket,
+            val entity: Entity,
+            val name: String
+        ) : CancellableEvent()
+    }
+
     /**
      * Posted when the entity spawns into the ClientWorld
      *
@@ -26,17 +40,11 @@ sealed class EntityEvent {
         val entity: Entity
     ) : Event()
 
-    sealed class Packet {
-        /**
-         * Posted when the client receives the EntityTrackerUpdateS2CPacket packet.
-         *
-         * @see xyz.meowing.krypt.mixins.MixinClientPlayNetworkHandler
-         * @since 1.2.0
-         */
-        class Metadata(
-            val packet: ClientboundSetEntityDataPacket,
-            val entity: Entity,
-            val name: String
-        ) : CancellableEvent()
-    }
+    class Leave(
+        val entity: Entity
+    ) : Event()
+
+    class Interact(
+        val entity: Entity
+    ) : CancellableEvent()
 }

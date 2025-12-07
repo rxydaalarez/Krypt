@@ -5,6 +5,7 @@ package xyz.meowing.krypt.events.core
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.entity.state.PlayerRenderState
 import com.mojang.blaze3d.vertex.PoseStack
+import net.minecraft.world.BossEvent
 import xyz.meowing.knit.api.events.CancellableEvent
 import xyz.meowing.knit.api.events.Event
 import xyz.meowing.knit.api.render.world.RenderContext
@@ -69,4 +70,8 @@ sealed class RenderEvent {
             val light: Int
         ) : Event()
     }
+
+    class BossBar(
+        val boss: BossEvent
+    ) : Event()
 }
