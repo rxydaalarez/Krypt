@@ -18,11 +18,12 @@ import xyz.meowing.krypt.utils.rendering.Render3D
 import java.awt.Color
 
 object RoutePlayer {
-    fun renderRecordingRoute(data: StepData, context: RenderContext) {
+    fun renderRecordingRoute(data: StepData, oldData: StepData, context: RenderContext) {
         val room = DungeonAPI.currentRoom ?: return
 
         renderLine(data, context, room)
         renderWaypoints(data, context, room)
+        renderLastSecret(oldData, context, room)
     }
 
     fun renderLine(data: StepData, context: RenderContext, room: Room) {
@@ -63,46 +64,8 @@ object RoutePlayer {
 
     private fun renderWaypoint(waypoint: WaypointData, context: RenderContext, room: Room, name: Boolean = true){
         val realPos = room.getRealCoord(waypoint.pos)
-        val block = WorldUtils.getBlockStateAt(realPos.x, realPos.y, realPos.z)
         val stack = context.matrixStack() ?: return
         val consumers = context.consumers()
-
-        if(waypoint.type == WaypointType.SUPERBOOM) Krypt.LOGGER.info("Rendering Superboom at, $realPos")
-
-        if (block != null && block != Blocks.AIR) {
-            if(waypoint.type == WaypointType.SUPERBOOM) Krypt.LOGGER.info("Found Block!")
-
-            val blockShape = block.getShape(
-                EmptyBlockGetter.INSTANCE,
-                realPos,
-                CollisionContext.of(context.camera().entity)
-            )
-
-            if (blockShape.isEmpty) return
-            val camPos = context.camera().position
-
-            ShapeRenderer.renderShape(
-                stack,
-                consumers.getBuffer(RenderType.lines()),
-                blockShape,
-                realPos.x - camPos.x,
-                realPos.y - camPos.y,
-                realPos.z - camPos.z,
-                waypoint.type.color.rgb
-            )
-        } else{
-            if(waypoint.type == WaypointType.SUPERBOOM) Krypt.LOGGER.info("Didnt Find block!")
-
-            val aabb = AABB(0.0,0.0,0.0,1.0,1.0,1.0).move(realPos)
-
-            Render3D.drawOutlinedBB(
-                aabb,
-                waypoint.type.color,
-                consumers,
-                stack
-            )
-        }
-
         val aabb = AABB(0.0,0.0,0.0,1.0,1.0,1.0).move(realPos)
 
         Render3D.drawOutlinedBB(

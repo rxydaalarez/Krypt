@@ -5,6 +5,7 @@ import net.minecraft.core.Vec3i
 import net.minecraft.sounds.SoundEvents
 import tech.thatgravyboat.skyblockapi.utils.text.TextProperties.stripped
 import xyz.meowing.knit.api.KnitChat
+import xyz.meowing.knit.api.KnitClient
 import xyz.meowing.knit.api.KnitPlayer
 import xyz.meowing.krypt.annotations.Module
 import xyz.meowing.krypt.api.dungeons.DungeonAPI
@@ -30,7 +31,7 @@ object RouteRecorder {
     private var lastPlayerPos: BlockPos? = null
 
     val currentStep: StepData get() = route[stepIndex]
-    val lastStep: StepData? get() = route[stepIndex - 1]
+    val lastStep: StepData get() = route[stepIndex - 1]
 
     init {
         EventBus.registerIn<DungeonEvent.Room.Change>(SkyBlockIsland.THE_CATACOMBS) {
@@ -40,20 +41,26 @@ object RouteRecorder {
             stopRecording()
         }
 
-        EventBus.registerIn<DungeonEvent.Secrets.Bat>(SkyBlockIsland.THE_CATACOMBS) {}
+        EventBus.registerIn<DungeonEvent.Secrets.Bat>(SkyBlockIsland.THE_CATACOMBS) { addWaypoint(WaypointType.SECRET, it.entity.blockPosition()) }
+        EventBus.registerIn<DungeonEvent.Secrets.Chest>(SkyBlockIsland.THE_CATACOMBS) { addWaypoint(WaypointType.SECRET, it.blockPos) }
+        EventBus.registerIn<DungeonEvent.Secrets.Essence>(SkyBlockIsland.THE_CATACOMBS) { addWaypoint(WaypointType.SECRET, it.blockPos)}
 
-        EventBus.registerIn<DungeonEvent.Secrets.Chest>(SkyBlockIsland.THE_CATACOMBS) {}
+        EventBus.registerIn<DungeonEvent.Secrets.Item>(SkyBlockIsland.THE_CATACOMBS) {
+            val pos = KnitClient.world?.getEntity(it.entityId)?.blockPosition() ?: return@registerIn
+        }
 
-        EventBus.registerIn<DungeonEvent.Secrets.Item>(SkyBlockIsland.THE_CATACOMBS) {}
 
-        EventBus.registerIn<DungeonEvent.Secrets.Essence>(SkyBlockIsland.THE_CATACOMBS) {}
-
-        EventBus.registerIn<DungeonEvent.Secrets.Misc>(SkyBlockIsland.THE_CATACOMBS) {}
+        EventBus.registerIn<DungeonEvent.Secrets.Misc>(SkyBlockIsland.THE_CATACOMBS) {
+            when (it.secretType) {
+                DungeonEvent.Secrets.Type.RED_SKULL -> { /*TODO*/ }
+                DungeonEvent.Secrets.Type.LEVER -> { addWaypoint(WaypointType.LEVER, it.blockPos) }
+            }
+        }
 
         EventBus.registerIn<SoundEvent.Play>(SkyBlockIsland.THE_CATACOMBS) { event ->
             if (!recording) return@registerIn
-            val healdItem = KnitPlayer.player?.mainHandItem?.hoverName?.stripped ?: ""
 
+            val healdItem = KnitPlayer.player?.mainHandItem?.hoverName?.stripped ?: ""
             val sound = event.sound
 
             if (sound.location == SoundEvents.ENDER_DRAGON_HURT.location) {
@@ -62,16 +69,13 @@ object RouteRecorder {
             }
 
             if (sound.location == SoundEvents.GENERIC_EXPLODE.value().location) {
-                if (setOf("boom TNT", "Explosive Bow").none { healdItem.contains(it) }) {
-                    KnitChat.modMessage("Not holding boom, holding $healdItem")
-                    return@registerIn
-                }
+                if (setOf("boom TNT", "Explosive Bow").none { healdItem.contains(it) }) return@registerIn
                 val pos = BlockPos((sound.x - 0.5).toInt(), (sound.y - 0.5).toInt(), (sound.z - 0.5).toInt())
-                KnitChat.modMessage("Boom detectd adding one at $pos")
                 addWaypoint(WaypointType.SUPERBOOM, pos)
             }
 
             if (sound.location.toString().contains("break")) {
+                if(!healdItem.contains("Dungeon Breaker")) return@registerIn
                 val pos = BlockPos((sound.x - 0.5).toInt(), (sound.y - 0.5).toInt(), (sound.z - 0.5).toInt())
                 addWaypoint(WaypointType.MINE, pos)
             }
@@ -94,7 +98,7 @@ object RouteRecorder {
         EventBus.registerIn<RenderEvent.World.Last>(SkyBlockIsland.THE_CATACOMBS) { event ->
             if (!recording) return@registerIn
 
-            RoutePlayer.renderRecordingRoute(currentStep, event.context)
+            RoutePlayer.renderRecordingRoute(currentStep, lastStep, event.context)
         }
     }
 
