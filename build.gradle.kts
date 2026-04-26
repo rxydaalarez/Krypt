@@ -32,6 +32,7 @@ val clocheAction: Action<ExternalModuleDependency> = Action {
 		attribute(Attribute.of("earth.terrarium.cloche.modLoader", String::class.java), "fabric")
 		attribute(Attribute.of("earth.terrarium.cloche.minecraftVersion", String::class.java),
 			when (mcData.version) {
+				MinecraftVersions.VERSION_1_21_11,
 				MinecraftVersions.VERSION_1_21_10 -> "1.21.9"
 				else -> mcData.toString().substringBefore("-")
 			}
@@ -58,6 +59,7 @@ dependencies {
 	include("tech.thatgravyboat:skyblock-api:3.0.23", clocheAction)
 
 	when (mcData.version) {
+		MinecraftVersions.VERSION_1_21_11,
 		MinecraftVersions.VERSION_1_21_10 -> modImplementation("com.terraformersmc:modmenu:16.0.0-rc.1")
 		MinecraftVersions.VERSION_1_21_8 -> modImplementation("com.terraformersmc:modmenu:15.0.0")
 		MinecraftVersions.VERSION_1_21_5 -> modImplementation("com.terraformersmc:modmenu:14.0.0-rc.2")

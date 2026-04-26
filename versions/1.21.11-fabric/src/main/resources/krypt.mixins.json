@@ -1,0 +1,27 @@
+{
+    "required": true,
+    "package": "xyz.meowing.krypt.mixins",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [
+        "MixinEntity",
+        "MixinLevelChunk",
+        "MixinLivingEntity"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "overwrites": {
+        "requireAnnotations": true
+    },
+    "client": [
+        "AccessorMapState",
+        "MixinAbstractContainerScreen",
+        "MixinBossHealthOverlay",
+        "MixinClientConnection",
+        "MixinClientPlayNetworkHandler",
+        "MixinEntityRenderer",
+        "MixinGameRenderer",
+        "MixinMinecraft",
+        "MixinMouseHandler"
+    ]
+}
